@@ -6,7 +6,7 @@ export function getAnnouncement(
 ): string {
     const roleId = character.revealed
         ? character.actualRole
-        : character.apparentRole;
+        : character.announcementRole;
 
     const role = context.roles[roleId];
 

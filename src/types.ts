@@ -69,6 +69,7 @@ export type Character = {
     arrested: boolean;
     apparentRoleState?: ApparentRoleState;
     wannabeData?: WannabeData;
+    announcementRole: RoleId;
 };
 
 export type ApparentRoleState = {

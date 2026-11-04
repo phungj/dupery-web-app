@@ -5,7 +5,7 @@ import type {
     RoleId,
 } from "@/src/types";
 import { createEmptyBoard } from "@/src/board";
-import { roles } from "@/src/roles"; // Adjust to your registry's path
+import { roles } from "@/src/roles";
 
 function shuffle<T>(items: T[]): T[] {
     const result = [...items];
@@ -49,32 +49,27 @@ function getDefaultAlignment(roleId: RoleId): "good" | "evil" {
         : "good";
 }
 
-function assignApparentRole(
-    character: Character,
-    inPlay: RoleId[]
-): void {
-    // Wannabe has a special apparent-role rule.
-    if (character.actualRole === "wannabe") {
+function getPretendedRole(
+    roleId: RoleId,
+    inPlay: RoleId[],
+    excludedRoles: ReadonlySet<RoleId> = new Set()
+): RoleId {
+    // Wannabe always pretends to be an Underling in play.
+    if (roleId === "wannabe") {
         const underlingsInPlay = inPlay.filter(
-            (roleId) =>
-                roles[roleId].classification === "underling" &&
-                roleId !== character.actualRole
+            (candidate) =>
+                candidate !== "wannabe" &&
+                !excludedRoles.has(candidate) &&
+                roles[candidate].classification === "underling"
         );
 
-        character.apparentRole = chooseOne(underlingsInPlay);
-        character.apparentRoleState = {
-            tainted: true,
-            revealed: true,
-        };
-
-        return;
+        return chooseOne(underlingsInPlay);
     }
 
-    const generation = roles[character.actualRole].generation;
+    const generation = roles[roleId].generation;
 
     if (!generation?.mustPretend) {
-        character.apparentRole = character.actualRole;
-        return;
+        return roleId;
     }
 
     let candidates = Object.keys(roles) as RoleId[];
@@ -83,40 +78,139 @@ function assignApparentRole(
         candidates = inPlay;
     } else if (generation.mustPretendNotInPlay) {
         candidates = candidates.filter(
-            (roleId) => !inPlay.includes(roleId)
+            (candidate) => !inPlay.includes(candidate)
         );
     }
 
     candidates = candidates.filter(
-        (roleId) => roleId !== character.actualRole
+        (candidate) =>
+            candidate !== roleId &&
+            !excludedRoles.has(candidate)
     );
 
     if (generation.mustPretendDefaultAlignment) {
         candidates = candidates.filter(
-            (roleId) =>
-                getDefaultAlignment(roleId) ===
+            (candidate) =>
+                getDefaultAlignment(candidate) ===
                 generation.mustPretendDefaultAlignment
         );
     }
 
-    character.apparentRole = chooseOne(candidates);
+    if (candidates.length === 0) {
+        throw new Error(
+            `No non-cyclic pretending role available for ${roleId}.`
+        );
+    }
+
+    return chooseOne(candidates);
 }
 
-export function generateBoard(): Board {
-    const selectedRoles = [
+function applyWannabeEffects(
+    character: Character,
+    characters: Character[]
+): void {
+    character.apparentRoleState = {
+        tainted: true,
+        revealed: true,
+    };
+
+    const otherUnderlings = characters.filter(
+        (other) =>
+            roles[other.actualRole].classification === "underling" &&
+            other.id !== character.id
+    );
+
+    const target = chooseOne(otherUnderlings);
+    target.revealed = true;
+
+    character.wannabeData = {
+        revealedUnderlingId: target.id,
+    };
+}
+
+function assignApparentRole(
+    character: Character,
+    inPlay: RoleId[],
+    characters: Character[],
+    forcedApparentRole?: RoleId
+): void {
+    // Actual Wannabe gets its special apparent identity.
+    if (character.actualRole === "wannabe") {
+        character.apparentRole = getPretendedRole(
+            "wannabe",
+            inPlay
+        );
+
+        character.announcementRole = character.apparentRole;
+
+        applyWannabeEffects(character, characters);
+
+        return;
+    }
+
+    const generation = roles[character.actualRole].generation;
+
+    if (!generation?.mustPretend) {
+        character.apparentRole = character.actualRole;
+        character.announcementRole = character.actualRole;
+        return;
+    }
+
+    // Determine the role being claimed.
+    character.apparentRole = forcedApparentRole ??
+        getPretendedRole(character.actualRole, inPlay);
+
+    // Resolve additional pretending rules.
+    let announcementRole = character.apparentRole;
+    const visited = new Set<RoleId>();
+
+    while (true) {
+        if (announcementRole === "wannabe") {
+            applyWannabeEffects(character, characters);
+            announcementRole = getPretendedRole("wannabe", inPlay);
+            break;
+        }
+
+        if (!roles[announcementRole].generation?.mustPretend) {
+            break;
+        }
+
+        if (visited.has(announcementRole)) {
+            throw new Error(
+                `Pretending cycle detected at ${announcementRole}.`
+            );
+        }
+
+        visited.add(announcementRole);
+
+        announcementRole = getPretendedRole(
+            announcementRole,
+            inPlay,
+            visited
+        );
+    }
+
+    character.announcementRole = announcementRole;
+}
+
+export function generateBoard(
+    selectedRoles?: RoleId[]
+): Board {
+    const rolesInPlay = selectedRoles ?? [
         ...selectRoles("innocent", 4),
         ...selectRoles("meddler", 2),
         ...selectRoles("underling", 2),
     ];
 
-    const inPlay = selectedRoles;
+    const inPlay = rolesInPlay;
 
-    const characters: Character[] = selectedRoles.map(
+    const characters: Character[] = rolesInPlay.map(
         (roleId, index) => ({
             id: index + 1,
             address: 0,
             actualRole: roleId,
             apparentRole: roleId,
+            announcementRole: roleId,
             alignment: getDefaultAlignment(roleId),
             lying: roles[roleId].generation?.mustLie ?? false,
             tainted: false,
@@ -126,32 +220,66 @@ export function generateBoard(): Board {
         })
     );
 
-    // Assign apparent roles.
     for (const character of characters) {
-        assignApparentRole(character, inPlay);
+        assignApparentRole(character, inPlay, characters);
     }
 
-    // Resolve Wannabe's revealed Underling.
-    const wannabe = characters.find(
-        (character) => character.actualRole === "wannabe"
+    const addresses = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    characters.forEach((character, index) => {
+        character.address = addresses[index];
+    });
+
+    const board = createEmptyBoard();
+
+    for (const character of characters) {
+        board[character.address - 1] = character;
+    }
+
+    return board;
+}
+
+export function generateTestBoard(): Board {
+    const rolesInPlay: RoleId[] = [
+        "reporter",
+        "therapist",
+        "priest",
+        "mathematician",
+        "wannabe",
+        "copycat",
+        "mobster",
+        "scoundrel",
+    ];
+
+    const characters: Character[] = rolesInPlay.map(
+        (roleId, index) => ({
+            id: index + 1,
+            address: 0,
+            actualRole: roleId,
+            apparentRole: roleId,
+            announcementRole: roleId,
+            alignment: getDefaultAlignment(roleId),
+            lying: roles[roleId].generation?.mustLie ?? false,
+            tainted: false,
+            revealed: false,
+            alive: true,
+            arrested: false,
+        })
     );
 
-    if (wannabe) {
-        const otherUnderlings = characters.filter(
-            (character) =>
-                character.alignment === "evil" &&
-                character.id !== wannabe.id
+    const inPlay = rolesInPlay;
+
+    for (const character of characters) {
+        assignApparentRole(
+            character,
+            inPlay,
+            characters,
+            character.actualRole === "copycat"
+                ? "wannabe"
+                : undefined
         );
-
-        const target = chooseOne(otherUnderlings);
-        target.revealed = true;
-
-        wannabe.wannabeData = {
-            revealedUnderlingId: target.id,
-        };
     }
 
-    // Assign random addresses, leaving one empty.
     const addresses = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
     characters.forEach((character, index) => {

@@ -41,7 +41,7 @@ export default function Board({
                     character.arrested || (investigated && character.revealed)
                         ? character.actualRole
                         : investigated
-                            ? character.apparentRole
+                            ? character.announcementRole
                             : null;
 
                 const role = displayedRoleId
