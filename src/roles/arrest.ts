@@ -1,16 +1,22 @@
-import type { Board, ArrestResult } from "../types";
-import { roles } from "./index";
+import type { GameContext, ArrestResult } from "../types";
+import { getCharacterAt } from "../board";
 
-export function arrest(board: Board, address: number): ArrestResult {
-    const character = board[address - 1];
+export function arrest(
+    context: GameContext,
+    address: number
+): ArrestResult {
+    const character = getCharacterAt(context.board, address);
 
     if (!character) {
         return { type: "empty" };
     }
 
-    const role = roles[character.actualRole];
+    const role = context.roles[character.actualRole];
 
-    if (role.canBeArrested && !role.canBeArrested(board, character)) {
+    if (
+        role.canBeArrested &&
+        !role.canBeArrested(context, character)
+    ) {
         return { type: "not-allowed" };
     }
 

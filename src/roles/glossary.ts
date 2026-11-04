@@ -18,7 +18,7 @@ export const glossary: Record<TermId, GlossaryTerm> = {
 
     announce: {
         name: "Announce",
-        aliases: ["announce", "announced"],
+        aliases: ["announce", "announced", "announcement"],
         tooltip: "The act of giving information. What a role has announced is displayed below their name when investigated.",
     },
 
@@ -124,5 +124,17 @@ export const glossary: Record<TermId, GlossaryTerm> = {
         name: "Arrest",
         aliases: ["arrest", "arrested"],
         tooltip: "Your main way of stopping evil!  Putting a role behind bars also reveals them."
+    },
+
+    "self-confirm": {
+        name: "Self-Confirm",
+        aliases: ["self-confirming", "self-confirm", "self-confirmed"],
+        tooltip: "A role that can prove its own innocence.  Multiple self-confirm roles cannot be in play at once."
+    },
+
+    "not in play": {
+        name: "Not In Play",
+        aliases: ["not in play"],
+        tooltip: "A role that is not on the board."
     }
 };

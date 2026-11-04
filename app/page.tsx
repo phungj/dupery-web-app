@@ -3,12 +3,13 @@
 
 import { useState } from "react";
 
-import type {Board as BoardType, RoleId} from "@/src/types";
+import type {Board as BoardType, GameContext, RoleId} from "@/src/types";
 import { createTestScenario } from "@/test/testScenario";
 import { investigate } from "@/src/roles/investigate";
 import Board from "@/components/Board";
 import SuspectedRoles from "@/components/SuspectedRoles";
 import {arrest} from "@/src/roles/arrest";
+import {roles} from "@/src/roles";
 
 export default function Home() {
   const [board] = useState<BoardType>(() => createTestScenario());
@@ -18,8 +19,13 @@ export default function Home() {
 
   const [revealedRoles, setRevealedRoles] = useState<Record<number, RoleId>>({});
   const [arrestedAddresses, setArrestedAddresses] = useState<Record<number, boolean>>({});
+
+  const context: GameContext = {
+    board,
+    roles,
+  };
   function handleInvestigate(address: number) {
-    const result = investigate(board, address);
+    const result = investigate(context, address);
 
     if (result !== null) {
       setSelectedAddress(address);
@@ -62,7 +68,7 @@ export default function Home() {
   );
 
   function handleArrest(address: number) {
-    const result = arrest(board, address);
+    const result = arrest(context, address);
 
     if (result.type !== "resolved") return;
 

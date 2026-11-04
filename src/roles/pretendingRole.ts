@@ -1,16 +1,17 @@
-import type { Board, Character } from "@/src/types";
-import { roles } from "./index";
+import type { GameContext, Character } from "../types";
 
 export function getPretendingInformation(
-    board: Board,
+    context: GameContext,
     character: Character
 ): string {
-    return roles[character.apparentRole].getInformation(board, character);
+    return context.roles[character.apparentRole]
+        .getInformation(context, character);
 }
 
 export function getPretendingDeceptiveInformation(
-    board: Board,
+    context: GameContext,
     character: Character
 ): string {
-    return roles[character.apparentRole].getDeceptiveInformation(board, character);
+    return context.roles[character.apparentRole]
+        .getDeceptiveInformation(context, character);
 }

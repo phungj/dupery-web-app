@@ -1,11 +1,11 @@
-import type { Board, Character } from "../types";
+import type { GameContext, Character } from "../types";
 import { getAdjacentCharacters } from "../board";
 
 export function getTherapistInformation(
-    board: Board,
+    context: GameContext,
     character: Character
 ): string {
-    const count = getAdjacentCharacters(board, character)
+    const count = getAdjacentCharacters(context.board, character)
         .filter(other => other.alignment === "evil")
         .length;
 
@@ -15,10 +15,10 @@ export function getTherapistInformation(
 }
 
 export function getTherapistDeceptiveInformation(
-    board: Board,
+    context: GameContext,
     character: Character
 ): string {
-    const actualCount = getAdjacentCharacters(board, character)
+    const actualCount = getAdjacentCharacters(context.board, character)
         .filter(other => other.alignment === "evil")
         .length;
 

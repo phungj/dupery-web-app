@@ -1,5 +1,5 @@
 
-import type { Board, Character } from "./types";
+import type {Board, Character, RoleId} from "./types";
 
 export function createEmptyBoard(): Board {
     return [
@@ -63,6 +63,23 @@ export function getSurroundingCharacters(
     character: Character
 ): Character[] {
     return getNeighboringCharacters(board, character, true);
+}
+
+export function getRolesInPlay(board: Board): RoleId[] {
+    return [...new Set(
+        board
+            .filter((character): character is Character => character !== null)
+            .map(character => character.actualRole)
+    )];
+}
+
+export function getRolesNotInPlay(
+    board: Board,
+    allRoleIds: RoleId[]
+): RoleId[] {
+    const inPlay = new Set(getRolesInPlay(board));
+
+    return allRoleIds.filter(roleId => !inPlay.has(roleId));
 }
 
 export function getDistance(addressA: number, addressB: number): number {

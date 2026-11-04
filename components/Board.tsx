@@ -1,4 +1,4 @@
-import type {Board as BoardType, RoleId} from "@/src/types";
+import type { Board as BoardType, RoleId } from "@/src/types";
 import { roles } from "@/src/roles";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -15,14 +15,14 @@ type Props = {
 };
 
 export default function Board({
-                                  board,
-                                  announcements,
-                                  selectedAddress,
-                                  onInvestigate,
+    board,
+    announcements,
+    selectedAddress,
+    onInvestigate,
     onArrest,
     revealedRoles,
     arrestedAddresses
-                              }: Props) {
+}: Props) {
     return (
         <div className="grid grid-cols-3 gap-2">
             {board.map((character, index) => {
@@ -34,14 +34,20 @@ export default function Board({
                         <div
                             key={address}
                             className="aspect-square w-full min-h-0 rounded-lg border-2 border-dotted border-gray-300 flex items-start justify-start p-3"
-                        >
-                        </div>
+                        />
                     );
                 }
 
-                const revealedRoleId = revealedRoles[address];
-                const role = roles[revealedRoleId ?? character.apparentRole];
                 const announcement = announcements[address];
+                const investigated = announcement !== undefined;
+
+                const revealedRoleId = revealedRoles[address];
+                const displayedRoleId = revealedRoleId ??
+                    (investigated ? character.apparentRole : null);
+
+                const role = displayedRoleId
+                    ? roles[displayedRoleId]
+                    : null;
 
                 return (
                     <button
@@ -53,30 +59,32 @@ export default function Board({
                         }}
                         aria-pressed={selected}
                         className={`
-    aspect-square w-full min-h-0 rounded-lg border p-4 overflow-hidden
-    flex flex-col items-center justify-start gap-2
-    text-center
-    hover:bg-gray-100
+aspect-square w-full min-h-0 rounded-lg border p-4 overflow-hidden
+flex flex-col items-center justify-start gap-2
+text-center
+hover:bg-gray-100
     ${selected
-                            ? "border-blue-600 bg-blue-50"
-                            : "border-gray-300"
-                        }
-`}
+        ? "border-blue-600 bg-blue-50"
+        : "border-gray-300"
+    }
+    `}
                     >
                         <span className="text-sm text-gray-500">
                             {address}
                         </span>
 
-                        <span className={`role-name role-name--${role.classification}`}>
-                                                        {arrestedAddresses[address] && (
-                                                            <FontAwesomeIcon
-                                                                icon={faHandcuffs}
-                                                                className="mr-2 text-gray-500"
-                                                            />
-                                                        )}
-    {role.name}
-
-</span>
+                        {role && (
+                            <span className={`role-name role-name--${role.classification}`}>
+                                {arrestedAddresses[address] && (
+                                    <FontAwesomeIcon
+                                        icon={faHandcuffs}
+                                        className="mr-2 text-gray-500"
+                                        title="Arrested"
+                                    />
+                                )}
+                                {role.name}
+                            </span>
+                        )}
 
                         {announcement && (
                             <div className="mt-1 w-full pt-2 text-sm">

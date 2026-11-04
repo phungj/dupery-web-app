@@ -1,15 +1,14 @@
-import type { Board, Character } from "../types";
-import { roles } from "./index";
+import type { GameContext, Character } from "../types";
 
 export function getAnnouncement(
-    board: Board,
+    context: GameContext,
     character: Character
 ): string {
-    const role = roles[character.apparentRole];
+    const role = context.roles[character.apparentRole];
 
     if (character.lying || character.tainted) {
-        return role.getDeceptiveInformation(board, character);
+        return role.getDeceptiveInformation(context, character);
     }
 
-    return role.getInformation(board, character);
+    return role.getInformation(context, character);
 }

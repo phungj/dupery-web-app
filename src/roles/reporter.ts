@@ -1,11 +1,11 @@
-import type { Board, Character } from "../types";
+import type { GameContext, Character } from "../types";
 import { getEvilCharacters, getDistance } from "../board";
 
 function getClosestEvilDistance(
-    board: Board,
+    context: GameContext,
     character: Character
 ): number | null {
-    const evilCharacters = getEvilCharacters(board)
+    const evilCharacters = getEvilCharacters(context.board)
         .filter(evil => evil.id !== character.id);
 
     if (evilCharacters.length === 0) {
@@ -20,10 +20,10 @@ function getClosestEvilDistance(
 }
 
 export function getReporterInformation(
-    board: Board,
+    context: GameContext,
     character: Character
 ): string {
-    const distance = getClosestEvilDistance(board, character);
+    const distance = getClosestEvilDistance(context, character);
 
     if (distance === null) {
         return "I did not find any evil.";
@@ -34,10 +34,10 @@ export function getReporterInformation(
 }
 
 export function getReporterDeceptiveInformation(
-    board: Board,
+    context: GameContext,
     character: Character
 ): string {
-    const actualDistance = getClosestEvilDistance(board, character);
+    const actualDistance = getClosestEvilDistance(context, character);
 
     const possibleDistances = [1, 2, 3, 4].filter(
         distance => distance !== actualDistance

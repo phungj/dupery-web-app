@@ -1,16 +1,16 @@
-import type { Board } from "../types";
+import type { GameContext } from "../types";
 import { getCharacterAt } from "../board";
 import { getAnnouncement } from "./announcement";
 
 export function investigate(
-    board: Board,
+    context: GameContext,
     address: number
 ): string | null {
-    const character = getCharacterAt(board, address);
+    const character = getCharacterAt(context.board, address);
 
     if (!character) {
         return null;
     }
 
-    return getAnnouncement(board, character);
+    return getAnnouncement(context, character);
 }

@@ -37,7 +37,9 @@ export type TermId =
     | "underling"
     | "pretend"
     | "reveal"
-    | "arrest";
+    | "arrest"
+    | "self-confirm"
+    | "not in play";
 
 export type RichText = Array<
     | { type: "text"; value: string }
@@ -77,16 +79,27 @@ export type RoleDefinition = {
     name: string;
     classification: Classification;
     description: RoleDescription;
-    getInformation: (board: Board, character: Character) => string;
-    getDeceptiveInformation: (board: Board, character: Character) => string;
+    getInformation: (
+        context: GameContext,
+        character: Character
+    ) => string;
+    getDeceptiveInformation: (
+        context: GameContext,
+        character: Character
+    ) => string;
     generation?: {
         mustPretend?: boolean;
         mustPretendInPlay?: boolean;
         mustPretendNotInPlay?: boolean;
+        mustPretendDefaultAlignment?: Alignment;
         mustLie?: boolean;
     };
+    selfConfirm?: boolean;
 
-    canBeArrested?: (board: Board, character: Character) => boolean;
+    canBeArrested?: (
+        context: GameContext,
+        character: Character
+    ) => boolean;
     revealOnArrest?: boolean;
 };
 
@@ -98,4 +111,9 @@ export type ArrestResult =
     success: boolean;
     character: Character;
     revealRole: boolean;
+};
+
+export type GameContext = {
+    board: Board;
+    roles: Record<RoleId, RoleDefinition>;
 };

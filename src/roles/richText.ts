@@ -1,4 +1,3 @@
-
 import { glossary } from "./glossary";
 import type { RichText, TermId } from "../types";
 
@@ -25,7 +24,7 @@ export function parseRichText(input: string): RichText {
     );
 
     const pattern = new RegExp(
-        String.raw`\*([^*]+)\*|\b(${escapedAliases.join("|")})\b`,
+        String.raw`\\([a-zA-Z]+)|\*([^*]+)\*|\b(${escapedAliases.join("|")})\b`,
         "gi"
     );
 
@@ -41,20 +40,35 @@ export function parseRichText(input: string): RichText {
             });
         }
 
-        const value = match[1] ?? match[2];
-        const termId = termLookup.get(value.toLowerCase());
-
-        if (termId) {
+        if (match[1]) {
+            // Escaped word: display literally without glossary matching.
             parts.push({
-                type: "term",
-                id: termId,
-                label: value,
+                type: "text",
+                value: match[1],
             });
-        } else {
+        } else if (match[2]) {
+            // Bold markup.
             parts.push({
                 type: "bold",
-                value,
+                value: match[2],
             });
+        } else {
+            // Glossary term.
+            const value = match[3];
+            const termId = termLookup.get(value.toLowerCase());
+
+            if (termId) {
+                parts.push({
+                    type: "term",
+                    id: termId,
+                    label: value,
+                });
+            } else {
+                parts.push({
+                    type: "text",
+                    value,
+                });
+            }
         }
 
         lastIndex = pattern.lastIndex;

@@ -1,8 +1,8 @@
-import type { Board, Character } from "../types";
+import type { GameContext, Character } from "../types";
 import { getEvilCharacters } from "../board";
 
-function getEvilAddressSum(board: Board): number {
-    return getEvilCharacters(board).reduce(
+function getEvilAddressSum(context: GameContext): number {
+    return getEvilCharacters(context.board).reduce(
         (sum, character) => sum + character.address,
         0
     );
@@ -21,19 +21,19 @@ function getMaximumError(trueSum: number): number {
 }
 
 export function getMathematicianInformation(
-    board: Board,
-    character: Character
+    context: GameContext,
+    _character: Character
 ): string {
-    const sum = getEvilAddressSum(board);
+    const sum = getEvilAddressSum(context);
 
     return `I have calculated the number ${sum}.`;
 }
 
 export function getMathematicianDeceptiveInformation(
-    board: Board,
-    character: Character
+    context: GameContext,
+    _character: Character
 ): string {
-    const trueSum = getEvilAddressSum(board);
+    const trueSum = getEvilAddressSum(context);
     const maximumError = getMaximumError(trueSum);
 
     // Choose whether to overestimate or underestimate.
