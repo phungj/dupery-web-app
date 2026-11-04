@@ -8,7 +8,7 @@ export function investigate(
 ): string | null {
     const character = getCharacterAt(context.board, address);
 
-    if (!character) {
+    if (!character || character.arrested) {
         return null;
     }
 

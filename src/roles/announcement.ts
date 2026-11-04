@@ -1,12 +1,20 @@
-import type { GameContext, Character } from "../types";
+import {Character, GameContext} from "@/src/types";
 
 export function getAnnouncement(
     context: GameContext,
     character: Character
 ): string {
-    const role = context.roles[character.apparentRole];
+    const roleId = character.revealed
+        ? character.actualRole
+        : character.apparentRole;
 
-    if (character.lying || character.tainted) {
+    const role = context.roles[roleId];
+
+    const isTainted = character.revealed
+        ? character.tainted
+        : character.apparentRoleState?.tainted ?? character.tainted;
+
+    if (character.lying || isTainted) {
         return role.getDeceptiveInformation(context, character);
     }
 

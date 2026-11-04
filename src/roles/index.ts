@@ -20,6 +20,8 @@ import {
     getMailmanInformation,
     getMailmanDeceptiveInformation,
 } from "./mailman";
+import {getUnderlingDeceptiveInformation, getUnderlingInformation} from "@/src/roles/underlingRole";
+import {canScoundrelBeArrested} from "@/src/roles/scoundrel";
 
 const getRoles = () => roles;
 
@@ -83,8 +85,8 @@ export const roles: Record<RoleId, RoleDefinition> = {
                 "I lie and pretend to be an in-play role."
             ),
         },
-        getInformation: getPretendingInformation,
-        getDeceptiveInformation: getPretendingDeceptiveInformation,
+        getInformation: getUnderlingInformation,
+        getDeceptiveInformation: getUnderlingDeceptiveInformation,
         generation: {
             mustPretend: true,
             mustPretendInPlay: true,
@@ -105,8 +107,8 @@ export const roles: Record<RoleId, RoleDefinition> = {
                 "I pretend to be an in-play role. When arrested, I am not revealed.\n\nUnlike most other Underling roles, I do not lie."
             ),
         },
-        getInformation: getPretendingInformation,
-        getDeceptiveInformation: getPretendingDeceptiveInformation,
+        getInformation: getUnderlingInformation,
+        getDeceptiveInformation: getUnderlingDeceptiveInformation,
         generation: {
             mustPretend: true,
             mustPretendInPlay: true,
@@ -196,5 +198,38 @@ When I am lying or tainted, I announce one of the following statements:
             mustPretendDefaultAlignment: "good",
             mustLie: true,
         },
+    },
+
+    wannabe: {
+        id: "wannabe",
+        name: "Wannabe",
+        classification: "meddler",
+        description: {
+            short: parseRichText(
+                "I reveal a random Underling role.  I pretend to be a tainted in play revealed Underling."
+            ),
+            full: parseRichText(
+                "I reveal a random Underling role.  I pretend to be a tainted in play revealed Underling.\n\nI may reveal a role that is not pretending.\n\nWhen I am tainted I do not reveal another Underling role."
+            ),
+        },
+        getInformation: getPretendingInformation,
+        getDeceptiveInformation: getPretendingDeceptiveInformation,
+    },
+
+    scoundrel: {
+        id: "scoundrel",
+        name: "Scoundrel",
+        classification: "underling",
+        description: {
+            short: parseRichText(
+                "I cannot be arrested unless I am the only unarrested and alive evil."
+            ),
+            full: parseRichText(
+                "I cannot be killed or arrested unless I am the only unarrested and alive evil.\n\nAttempting to arrest me still passes time.\n\nI ignore all good roles that appear to be evil. I can always be arrested or killed if I am the only true unarrested and alive evil.\n\nWhen I am tainted, I can die or be arrested even when I am not the last evil role."
+            ),
+        },
+        getInformation: getUnderlingInformation,
+        getDeceptiveInformation: getUnderlingDeceptiveInformation,
+        canBeArrested: canScoundrelBeArrested,
     },
 };

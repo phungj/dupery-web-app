@@ -1,4 +1,4 @@
-import type { GameContext, ArrestResult } from "../types";
+import type {GameContext, ArrestResult, Board, Character} from "../types";
 import { getCharacterAt } from "../board";
 
 export function arrest(
@@ -20,10 +20,23 @@ export function arrest(
         return { type: "not-allowed" };
     }
 
+    const revealRole = role.revealOnArrest ?? true;
+
+    const updatedCharacter: Character = {
+        ...character,
+        arrested: true,
+        revealed: character.revealed || revealRole,
+    };
+
+    const updatedBoard = context.board.map((current) =>
+        current?.id === character.id ? updatedCharacter : current
+    ) as Board;
+
     return {
         type: "resolved",
         success: character.alignment === "evil",
-        character,
-        revealRole: role.revealOnArrest ?? true,
+        character: updatedCharacter,
+        board: updatedBoard,
+        revealRole,
     };
 }

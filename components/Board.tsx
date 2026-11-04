@@ -10,8 +10,6 @@ type Props = {
     selectedAddress: number | null;
     onInvestigate: (address: number) => void;
     onArrest: (address: number) => void;
-    revealedRoles: Record<number, RoleId>;
-    arrestedAddresses: Record<number, boolean>;
 };
 
 export default function Board({
@@ -20,8 +18,6 @@ export default function Board({
     selectedAddress,
     onInvestigate,
     onArrest,
-    revealedRoles,
-    arrestedAddresses
 }: Props) {
     return (
         <div className="grid grid-cols-3 gap-2">
@@ -41,9 +37,12 @@ export default function Board({
                 const announcement = announcements[address];
                 const investigated = announcement !== undefined;
 
-                const revealedRoleId = revealedRoles[address];
-                const displayedRoleId = revealedRoleId ??
-                    (investigated ? character.apparentRole : null);
+                const displayedRoleId =
+                    character.arrested || (investigated && character.revealed)
+                        ? character.actualRole
+                        : investigated
+                            ? character.apparentRole
+                            : null;
 
                 const role = displayedRoleId
                     ? roles[displayedRoleId]
@@ -75,11 +74,10 @@ hover:bg-gray-100
 
                         {role && (
                             <span className={`role-name role-name--${role.classification}`}>
-                                {arrestedAddresses[address] && (
+                                {character.arrested && (
                                     <FontAwesomeIcon
                                         icon={faHandcuffs}
                                         className="mr-2 text-gray-500"
-                                        title="Arrested"
                                     />
                                 )}
                                 {role.name}

@@ -39,7 +39,11 @@ export type TermId =
     | "reveal"
     | "arrest"
     | "self-confirm"
-    | "not in play";
+    | "not in play"
+    | "alive"
+    | "dead"
+    | "kill"
+    | "unarrested";
 
 export type RichText = Array<
     | { type: "text"; value: string }
@@ -60,6 +64,20 @@ export type Character = {
     alignment: Alignment;
     lying: boolean;
     tainted: boolean;
+    revealed: boolean;
+    alive: boolean;
+    arrested: boolean;
+    apparentRoleState?: ApparentRoleState;
+    wannabeData?: WannabeData;
+};
+
+export type ApparentRoleState = {
+    tainted: boolean;
+    revealed: boolean;
+};
+
+export type WannabeData = {
+    revealedUnderlingId: number;
 };
 
 export type Board = [
@@ -110,6 +128,7 @@ export type ArrestResult =
     type: "resolved";
     success: boolean;
     character: Character;
+    board: Board;
     revealRole: boolean;
 };
 

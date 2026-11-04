@@ -136,5 +136,29 @@ export const glossary: Record<TermId, GlossaryTerm> = {
         name: "Not In Play",
         aliases: ["not in play"],
         tooltip: "A role that is not on the board."
+    },
+
+    alive: {
+        name: "Alive",
+        aliases: ["alive", "living"],
+        tooltip: "A role that is not dead."
+    },
+
+    dead: {
+        name: "Dead",
+        aliases: ["dead", "die"],
+        tooltip: "A role that has been killed.  Dead roles do not reveal and any information they may have announced is lost."
+    },
+
+    kill: {
+        name: "Kill",
+        aliases: ["kill", "kills", "killed"],
+        tooltip: "Makes a role dead.  Dead roles do not reveal and any information they may have announced is lost."
+    },
+
+    unarrested: {
+        name: "Unarrested",
+        aliases: ["unarrested"],
+        tooltip: "A role that has not been arrested yet."
     }
 };
