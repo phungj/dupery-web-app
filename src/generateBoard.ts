@@ -1,6 +1,12 @@
 import type {Board, Character, Classification, GeneratedGame, RoleId,} from "@/src/types";
-import {createEmptyBoard} from "@/src/board";
+import {createEmptyBoard,    getAdjacentCharacters,
+    getSurroundingCharacters,} from "@/src/board";
 import {roles} from "@/src/roles";
+
+
+import type {
+    RomanticRelationship,
+} from "./types";
 
 type ClassificationCounts = Record<Classification, number>;
 
@@ -66,12 +72,13 @@ function getDefaultAlignment(roleId: RoleId): "good" | "evil" {
 function getPretendedRole(
     roleId: RoleId,
     inPlay: RoleId[],
+    suspectedRoleIds: RoleId[],
     excludedRoles: ReadonlySet<RoleId> = new Set()
 ): RoleId {
     // Wannabe always pretends to be an Underling in play.
     if (roleId === "wannabe") {
         const underlingsInPlay = inPlay.filter(
-            (candidate) =>
+            candidate =>
                 candidate !== "wannabe" &&
                 !excludedRoles.has(candidate) &&
                 roles[candidate].classification === "underling"
@@ -86,25 +93,29 @@ function getPretendedRole(
         return roleId;
     }
 
-    let candidates = Object.keys(roles) as RoleId[];
+    let candidates: RoleId[];
 
     if (generation.mustPretendInPlay) {
         candidates = inPlay;
     } else if (generation.mustPretendNotInPlay) {
-        candidates = candidates.filter(
-            (candidate) => !inPlay.includes(candidate)
+        candidates = suspectedRoleIds.filter(
+            candidate => !inPlay.includes(candidate)
         );
+    } else if (generation.mustPretendSuspected) {
+        candidates = suspectedRoleIds;
+    } else {
+        candidates = Object.keys(roles) as RoleId[];
     }
 
     candidates = candidates.filter(
-        (candidate) =>
+        candidate =>
             candidate !== roleId &&
             !excludedRoles.has(candidate)
     );
 
     if (generation.mustPretendDefaultAlignment) {
         candidates = candidates.filter(
-            (candidate) =>
+            candidate =>
                 getDefaultAlignment(candidate) ===
                 generation.mustPretendDefaultAlignment
         );
@@ -145,6 +156,7 @@ function applyWannabeEffects(
 function assignApparentRole(
     character: Character,
     inPlay: RoleId[],
+    suspectedRoleIds: RoleId[],
     characters: Character[],
     forcedApparentRole?: RoleId
 ): void {
@@ -152,7 +164,8 @@ function assignApparentRole(
     if (character.actualRole === "wannabe") {
         character.apparentRole = getPretendedRole(
             "wannabe",
-            inPlay
+            inPlay,
+            suspectedRoleIds
         );
 
         character.announcementRole = character.apparentRole;
@@ -172,7 +185,7 @@ function assignApparentRole(
 
     // Determine the role being claimed.
     character.apparentRole = forcedApparentRole ??
-        getPretendedRole(character.actualRole, inPlay);
+        getPretendedRole(character.actualRole, inPlay, suspectedRoleIds);
 
     // Resolve additional pretending rules.
     let announcementRole = character.apparentRole;
@@ -181,7 +194,7 @@ function assignApparentRole(
     while (true) {
         if (announcementRole === "wannabe") {
             applyWannabeEffects(character, characters);
-            announcementRole = getPretendedRole("wannabe", inPlay);
+            announcementRole = getPretendedRole("wannabe", inPlay, suspectedRoleIds);
             break;
         }
 
@@ -200,11 +213,125 @@ function assignApparentRole(
         announcementRole = getPretendedRole(
             announcementRole,
             inPlay,
+            suspectedRoleIds,
             visited
         );
     }
 
     character.announcementRole = announcementRole;
+}
+
+function chooseRandom<T>(items: T[]): T | null {
+    if (items.length === 0) return null;
+
+    return items[Math.floor(Math.random() * items.length)];
+}
+
+function buildBoard(characters: Character[]): Board {
+    const board = createEmptyBoard();
+
+    for (const character of characters) {
+        board[character.address - 1] = character;
+    }
+
+    return board;
+}
+
+function createRomanticRelationship(
+    characters: Character[]
+): RomanticRelationship | null {
+    const romantic = characters.find(
+        character => character.actualRole === "romantic"
+    );
+
+    if (!romantic) return null;
+
+    const casanova = characters.find(
+        character => character.actualRole === "casanova"
+    );
+
+    let board = buildBoard(characters);
+
+    let possibleLovers: Character[];
+
+    if (romantic.lying || romantic.tainted) {
+        // A deceptive Romantic chooses an Underling.
+        possibleLovers = characters.filter(
+            character =>
+                roles[character.actualRole].classification === "underling"
+        );
+    } else {
+        // A truthful Romantic chooses an adjacent Innocent.
+        possibleLovers = getAdjacentCharacters(
+            board,
+            romantic
+        ).filter(
+            character =>
+                roles[character.actualRole].classification === "innocent"
+        );
+    }
+
+    const lover = chooseRandom(possibleLovers);
+
+    if (!lover) {
+        return {
+            romanticId: romantic.id,
+            loverId: null,
+            casanovaId: casanova?.id ?? null,
+            charmed: false,
+        };
+    }
+
+    // A truthful, untainted Romantic requires Casanova to surround the lover.
+    if (
+        casanova &&
+        !romantic.lying &&
+        !romantic.tainted
+    ) {
+        const surrounding = getSurroundingCharacters(board, lover);
+
+        const alreadySurrounding = surrounding.some(
+            character => character.id === casanova.id
+        );
+
+        if (!alreadySurrounding) {
+            // Swap Casanova with another surrounding character.
+            const swapTarget = surrounding.find(
+                character =>
+                    character.id !== romantic.id &&
+                    character.id !== casanova.id
+            );
+
+            if (!swapTarget) {
+                throw new Error(
+                    "Unable to position Casanova around the Romantic's lover."
+                );
+            }
+
+            const previousAddress = casanova.address;
+
+            casanova.address = swapTarget.address;
+            swapTarget.address = previousAddress;
+
+            board = buildBoard(characters);
+        }
+    }
+
+    const charmed =
+        casanova !== undefined &&
+        !romantic.lying &&
+        !romantic.tainted &&
+        !casanova.tainted &&
+        getSurroundingCharacters(board, lover).some(
+            character => character.id === casanova.id
+        );
+
+    return {
+        romanticId: romantic.id,
+        loverId: lover.id,
+        casanovaId: casanova?.id ?? null,
+        charmed,
+    };
 }
 
 export function generateBoard(
@@ -272,7 +399,7 @@ export function generateBoard(
     );
 
     for (const character of characters) {
-        assignApparentRole(character, inPlay, characters);
+        assignApparentRole(character, inPlay, suspectedRoleIds, characters);
     }
 
     const addresses = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -281,87 +408,89 @@ export function generateBoard(
         character.address = addresses[index];
     });
 
-    const board = createEmptyBoard();
+    const romanticRelationship =
+        createRomanticRelationship(characters);
 
-    for (const character of characters) {
-        board[character.address - 1] = character;
-    }
+    const board = buildBoard(characters);
 
     return {
         board,
         suspectedRoleIds,
+        romanticRelationship,
     };
 }
 
 export function generateTestBoard(): Board {
-    const rolesInPlay: RoleId[] = [
-        "reporter",
-        "therapist",
-        "priest",
-        "mathematician",
-        "drunkard",
-        "copycat",
-        "conman",
-        "scoundrel",
-    ];
+    // const rolesInPlay: RoleId[] = [
+    //     "reporter",
+    //     "therapist",
+    //     "priest",
+    //     "mathematician",
+    //     "drunkard",
+    //     "copycat",
+    //     "conman",
+    //     "scoundrel",
+    // ];
+    //
+    // const characters: Character[] = rolesInPlay.map(
+    //     (roleId, index) => ({
+    //         id: index + 1,
+    //         address: 0,
+    //         actualRole: roleId,
+    //         apparentRole: roleId,
+    //         announcementRole: roleId,
+    //         alignment: getDefaultAlignment(roleId),
+    //         lying: roles[roleId].generation?.mustLie ?? false,
+    //         tainted: false,
+    //         revealed: false,
+    //         alive: true,
+    //         arrested: false,
+    //     })
+    // );
+    //
+    // const inPlay = rolesInPlay;
+    //
+    // for (const character of characters) {
+    //     let forcedApparentRole: RoleId | undefined;
+    //
+    //     if (character.actualRole === "copycat") {
+    //         forcedApparentRole = "reporter";
+    //     } else if (character.actualRole === "drunkard") {
+    //         forcedApparentRole = "mailman";
+    //     }
+    //
+    //     assignApparentRole(
+    //         character,
+    //         inPlay,
+    //         characters,
+    //         forcedApparentRole
+    //     );
+    // }
+    //
+    // console.table(
+    //     characters.map((character) => ({
+    //         id: character.id,
+    //         actual: character.actualRole,
+    //         apparent: character.apparentRole,
+    //         announcement: character.announcementRole,
+    //         lying: character.lying,
+    //         revealed: character.revealed,
+    //     }))
+    // );
+    //
+    // const addresses = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    //
+    // characters.forEach((character, index) => {
+    //     character.address = addresses[index];
+    // });
+    //
+    // const board = createEmptyBoard();
+    //
+    // for (const character of characters) {
+    //     board[character.address - 1] = character;
+    // }
+    //
+    // return board;
 
-    const characters: Character[] = rolesInPlay.map(
-        (roleId, index) => ({
-            id: index + 1,
-            address: 0,
-            actualRole: roleId,
-            apparentRole: roleId,
-            announcementRole: roleId,
-            alignment: getDefaultAlignment(roleId),
-            lying: roles[roleId].generation?.mustLie ?? false,
-            tainted: false,
-            revealed: false,
-            alive: true,
-            arrested: false,
-        })
-    );
-
-    const inPlay = rolesInPlay;
-
-    for (const character of characters) {
-        let forcedApparentRole: RoleId | undefined;
-
-        if (character.actualRole === "copycat") {
-            forcedApparentRole = "reporter";
-        } else if (character.actualRole === "drunkard") {
-            forcedApparentRole = "mailman";
-        }
-
-        assignApparentRole(
-            character,
-            inPlay,
-            characters,
-            forcedApparentRole
-        );
-    }
-
-    console.table(
-        characters.map((character) => ({
-            id: character.id,
-            actual: character.actualRole,
-            apparent: character.apparentRole,
-            announcement: character.announcementRole,
-            lying: character.lying,
-            revealed: character.revealed,
-        }))
-    );
-
-    const addresses = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-
-    characters.forEach((character, index) => {
-        character.address = addresses[index];
-    });
-
-    const board = createEmptyBoard();
-
-    for (const character of characters) {
-        board[character.address - 1] = character;
-    }
-
-    return board;
+    return createEmptyBoard();
 }

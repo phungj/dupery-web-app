@@ -10,7 +10,9 @@ export type RoleId =
     | "wannabe"
     | "mobster"
     | "scoundrel"
-    | "conman";
+    | "conman"
+    | "romantic"
+    | "casanova";
 
 export type Alignment = "good" | "evil";
 
@@ -46,7 +48,8 @@ export type TermId =
     | "kill"
     | "unarrested"
     | "meddler"
-    | "traitor";
+    | "traitor"
+    | "surrounding";
 
 export type RichText = Array<
     | { type: "text"; value: string }
@@ -113,6 +116,7 @@ export type RoleDefinition = {
         mustPretend?: boolean;
         mustPretendInPlay?: boolean;
         mustPretendNotInPlay?: boolean;
+        mustPretendSuspected?: boolean;
         mustPretendDefaultAlignment?: Alignment;
         mustLie?: boolean;
     };
@@ -139,9 +143,19 @@ export type ArrestResult =
 export type GameContext = {
     board: Board;
     roles: Record<RoleId, RoleDefinition>;
+    suspectedRoleIds: RoleId[];
+    romanticRelationship: RomanticRelationship | null;
 };
 
 export type GeneratedGame = {
     board: Board;
     suspectedRoleIds: RoleId[];
+    romanticRelationship: RomanticRelationship | null;
+};
+
+export type RomanticRelationship = {
+    romanticId: number;
+    loverId: number | null;
+    casanovaId: number | null;
+    charmed: boolean;
 };

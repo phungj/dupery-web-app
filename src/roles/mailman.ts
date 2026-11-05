@@ -1,14 +1,14 @@
-import type {GameContext, Character, RoleId} from "../types";
-import { getRolesInPlay, getRolesNotInPlay } from "../board";
+import type { GameContext, Character, RoleId } from "../types";
+import { getRolesInPlay } from "../board";
 
 export function getMailmanInformation(
     context: GameContext,
     _character: Character
 ): string {
     const inPlay = getRolesInPlay(context.board);
-    const notInPlay = getRolesNotInPlay(
-        context.board,
-        Object.keys(context.roles) as RoleId[]
+
+    const notInPlay = context.suspectedRoleIds.filter(
+        roleId => !inPlay.includes(roleId)
     );
 
     const inPlayRole = chooseRandom(inPlay);
@@ -22,9 +22,9 @@ export function getMailmanDeceptiveInformation(
     _character: Character
 ): string {
     const inPlay = getRolesInPlay(context.board);
-    const notInPlay = getRolesNotInPlay(
-        context.board,
-        Object.keys(context.roles) as RoleId[]
+
+    const notInPlay = context.suspectedRoleIds.filter(
+        roleId => !inPlay.includes(roleId)
     );
 
     // Both claims must be false.

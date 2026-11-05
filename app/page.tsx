@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import type {Board as BoardType, GameContext, RoleId} from "@/src/types";
+import type {Board as BoardType, GameContext, RoleId, RomanticRelationship} from "@/src/types";
 import {generateBoard, generateTestBoard} from "@/src/generateBoard";
 import { investigate } from "@/src/roles/investigate";
 import Board from "@/components/Board";
@@ -57,6 +57,8 @@ export default function Home() {
   const [classificationCounts, setClassificationCounts] =
       useState<ClassificationCounts | null>(null);
   const [suspectedRoleIds, setSuspectedRoleIds] = useState<RoleId[]>([]);
+  const [romanticRelationship, setRomanticRelationship] =
+      useState<RomanticRelationship | null>(null);
 
   useEffect(() => {
     startNewGame()
@@ -75,6 +77,8 @@ export default function Home() {
   const context: GameContext = {
     board,
     roles,
+    suspectedRoleIds,
+    romanticRelationship
   };
 
   function startNewGame() {
@@ -82,6 +86,7 @@ export default function Home() {
 
     setBoard(newBoard.board);
     setSuspectedRoleIds(newBoard.suspectedRoleIds);
+    setRomanticRelationship(newBoard.romanticRelationship);
     setClassificationCounts(getClassificationCounts(newBoard.board));
     setSelectedAddress(null);
     setAnnouncements({});

@@ -16,6 +16,10 @@ import {
     getMailmanInformation,
     getMailmanDeceptiveInformation,
 } from "./mailman";
+import {
+    getRomanticInformation,
+    getRomanticDeceptiveInformation,
+} from "./romantic";
 import {getEmptyAnnouncement} from "@/src/roles/nonAnnouncingRole";
 import {canScoundrelBeArrested} from "@/src/roles/scoundrel";
 import {getWeathermanDeceptiveInformation, getWeathermanInformation} from "@/src/roles/weatherman";
@@ -246,5 +250,43 @@ When I am lying or tainted, I announce one of the following statements:
         getInformation: getEmptyAnnouncement,
         getDeceptiveInformation: getEmptyAnnouncement,
         canBeArrested: canScoundrelBeArrested,
+    },
+
+    romantic: {
+        id: "romantic",
+        name: "Romantic",
+        classification: "innocent",
+        description: {
+            short: parseRichText(
+                "I pick an adjacent Innocent role to be my lover. When investigated, I announce their address."
+            ),
+            full: parseRichText(
+                "I pick an adjacent Innocent role to be my lover. When investigated, I announce their address.\n\nWhen I am lying or tainted, my lover is an Underling and may or may not be adjacent to me.\n\nWhen the Casanova is in play and I am not lying or tainted, I announce \"My lover ran away with somebody else?!\".\n\nIf I find no valid roles that satisfy these rules, I will announce \"I love myself!\"."
+            ),
+        },
+        getInformation: getRomanticInformation,
+        getDeceptiveInformation: getRomanticDeceptiveInformation,
+    },
+
+    casanova: {
+        id: "casanova",
+        name: "Casanova",
+        classification: "underling",
+        description: {
+            short: parseRichText(
+                "I am surrounding the Romantic's lover unless the Romantic is lying or tainted.\nI charm the Romantic's lover and run away with them.\nI lie and pretend to be a suspected role."
+            ),
+            full: parseRichText(
+                "I am surrounding the Romantic's lover unless the Romantic is lying or tainted.\nI charm the Romantic's lover and run away with them.\nI lie and pretend to be a suspected role.\n\nWhen I am tainted, I do not charm the Romantic's lover."
+            ),
+        },
+        getInformation: getEmptyAnnouncement,
+        getDeceptiveInformation: getEmptyAnnouncement,
+        generation: {
+            mustPretend: true,
+            mustPretendSuspected: true,
+            mustPretendDefaultAlignment: "good",
+            mustLie: true,
+        },
     },
 };

@@ -175,4 +175,10 @@ export const glossary: Record<TermId, GlossaryTerm> = {
         tooltip: "The worst of the worst.  These evil roles will make it much harder to solve the case.",
         style: "traitor"
     },
+
+    surrounding: {
+        name: "Surrounding",
+        aliases: ["surrounding"],
+        tooltip: "Something which is surrounding is anywhere within the 8 tiles around that position."
+    }
 };
