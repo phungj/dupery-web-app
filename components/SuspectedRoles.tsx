@@ -11,7 +11,7 @@ import Tooltip from "@/components/Tooltip";
 type Classification = "innocent" | "meddler" | "underling";
 
 type Props = {
-    suspectedRoleIds?: RoleId[];
+    suspectedRoleIds: RoleId[];
 };
 
 const classifications: Classification[] = [
@@ -31,7 +31,7 @@ function getDefaultAlignment(classification: Classification): "good" | "evil" {
 }
 
 export default function SuspectedRoles({
-                                           suspectedRoleIds = Object.values(roles).map(role => role.id),
+                                           suspectedRoleIds
                                        }: Props) {
     const [selectedRoleId, setSelectedRoleId] = useState<RoleId | null>(null);
 

@@ -1,11 +1,25 @@
-import type {
-    Board,
-    Character,
-    Classification,
-    RoleId,
-} from "@/src/types";
-import { createEmptyBoard } from "@/src/board";
-import { roles } from "@/src/roles";
+import type {Board, Character, Classification, GeneratedGame, RoleId,} from "@/src/types";
+import {createEmptyBoard} from "@/src/board";
+import {roles} from "@/src/roles";
+
+type ClassificationCounts = Record<Classification, number>;
+
+export type GenerationOptions = {
+    suspectedRoleCounts?: ClassificationCounts;
+    inPlayRoleCounts?: ClassificationCounts;
+};
+
+const DEFAULT_SUSPECTED_COUNTS: ClassificationCounts = {
+    innocent: 5,
+    meddler: 3,
+    underling: 3,
+};
+
+const DEFAULT_IN_PLAY_COUNTS: ClassificationCounts = {
+    innocent: 4,
+    meddler: 2,
+    underling: 2,
+};
 
 function shuffle<T>(items: T[]): T[] {
     const result = [...items];
@@ -30,17 +44,17 @@ function selectRoles(
     classification: Classification,
     count: number
 ): RoleId[] {
-    const candidates = Object.values(roles)
-        .filter((role) => role.classification === classification)
-        .map((role) => role.id);
+    const availableRoles = Object.values(roles)
+        .filter(role => role.classification === classification)
+        .map(role => role.id);
 
-    if (candidates.length < count) {
+    if (count > availableRoles.length) {
         throw new Error(
-            `Not enough ${classification} roles to generate a board.`
+            `Cannot select ${count} ${classification} roles: only ${availableRoles.length} available.`
         );
     }
 
-    return shuffle(candidates).slice(0, count);
+    return shuffle(availableRoles).slice(0, count);
 }
 
 function getDefaultAlignment(roleId: RoleId): "good" | "evil" {
@@ -194,13 +208,50 @@ function assignApparentRole(
 }
 
 export function generateBoard(
-    selectedRoles?: RoleId[]
-): Board {
-    const rolesInPlay = selectedRoles ?? [
-        ...selectRoles("innocent", 4),
-        ...selectRoles("meddler", 2),
-        ...selectRoles("underling", 2),
+    options: GenerationOptions = {}
+): GeneratedGame {
+    const suspectedCounts: ClassificationCounts = {
+        ...DEFAULT_SUSPECTED_COUNTS,
+        ...options.suspectedRoleCounts,
+    };
+
+    const inPlayCounts: ClassificationCounts = {
+        ...DEFAULT_IN_PLAY_COUNTS,
+        ...options.inPlayRoleCounts,
+    };
+
+    const classifications: Classification[] = [
+        "innocent",
+        "meddler",
+        "underling",
     ];
+
+    // Select the complete pool of suspected roles.
+    const suspectedRoleIds = classifications.flatMap(
+        classification =>
+            selectRoles(
+                classification,
+                suspectedCounts[classification]
+            )
+    );
+
+    // Select which suspected roles actually appear on the board.
+    const rolesInPlay = classifications.flatMap(classification => {
+        const suspectedForClassification = suspectedRoleIds.filter(
+            roleId =>
+                roles[roleId].classification === classification
+        );
+
+        const count = inPlayCounts[classification];
+
+        if (count > suspectedForClassification.length) {
+            throw new Error(
+                `Cannot place ${count} ${classification} roles when only ${suspectedForClassification.length} are suspected.`
+            );
+        }
+
+        return shuffle(suspectedForClassification).slice(0, count);
+    });
 
     const inPlay = rolesInPlay;
 
@@ -236,7 +287,10 @@ export function generateBoard(
         board[character.address - 1] = character;
     }
 
-    return board;
+    return {
+        board,
+        suspectedRoleIds,
+    };
 }
 
 export function generateTestBoard(): Board {
@@ -245,9 +299,9 @@ export function generateTestBoard(): Board {
         "therapist",
         "priest",
         "mathematician",
-        "wannabe",
+        "drunkard",
         "copycat",
-        "mobster",
+        "conman",
         "scoundrel",
     ];
 
@@ -270,15 +324,32 @@ export function generateTestBoard(): Board {
     const inPlay = rolesInPlay;
 
     for (const character of characters) {
+        let forcedApparentRole: RoleId | undefined;
+
+        if (character.actualRole === "copycat") {
+            forcedApparentRole = "reporter";
+        } else if (character.actualRole === "drunkard") {
+            forcedApparentRole = "mailman";
+        }
+
         assignApparentRole(
             character,
             inPlay,
             characters,
-            character.actualRole === "copycat"
-                ? "wannabe"
-                : undefined
+            forcedApparentRole
         );
     }
+
+    console.table(
+        characters.map((character) => ({
+            id: character.id,
+            actual: character.actualRole,
+            apparent: character.apparentRole,
+            announcement: character.announcementRole,
+            lying: character.lying,
+            revealed: character.revealed,
+        }))
+    );
 
     const addresses = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 

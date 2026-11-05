@@ -58,15 +58,16 @@ export default function Board({
                         }}
                         aria-pressed={selected}
                         className={`
-aspect-square w-full min-h-0 rounded-lg border p-4 overflow-hidden
-flex flex-col items-center justify-start gap-2
-text-center
-hover:bg-gray-100
-    ${selected
-        ? "border-blue-600 bg-blue-50"
-        : "border-gray-300"
-    }
-    `}
+    aspect-square w-full min-h-0 rounded-lg border p-4 overflow-hidden
+    flex flex-col items-center justify-start gap-2
+    text-center
+    hover:bg-gray-100 dark:hover:bg-gray-700
+    ${
+                            selected
+                                ? "border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950"
+                                : "border-gray-300 dark:border-gray-600"
+                        }
+`}
                     >
                         <span className="text-sm text-gray-500">
                             {address}
@@ -85,7 +86,7 @@ hover:bg-gray-100
                         )}
 
                         {announcement && (
-                            <div className="mt-1 w-full pt-2 text-sm">
+                            <div className="mt-1 w-full pt-2 text-sm whitespace-pre-line">
                                 {announcement}
                             </div>
                         )}

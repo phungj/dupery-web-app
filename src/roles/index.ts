@@ -18,6 +18,7 @@ import {
 } from "./mailman";
 import {getEmptyAnnouncement} from "@/src/roles/nonAnnouncingRole";
 import {canScoundrelBeArrested} from "@/src/roles/scoundrel";
+import {getWeathermanDeceptiveInformation, getWeathermanInformation} from "@/src/roles/weatherman";
 
 const getRoles = () => roles;
 
@@ -90,6 +91,22 @@ export const roles: Record<RoleId, RoleDefinition> = {
             mustLie: true,
         },
         revealOnArrest: true,
+    },
+
+    weatherman: {
+        id: "weatherman",
+        name: "Weatherman",
+        classification: "innocent",
+        description: {
+            short: parseRichText(
+                "When investigated, I announce three addresses.  One address leads to an Innocent, one leads to a Meddler, and one leads to an Underling or Traitor."
+            ),
+            full: parseRichText(
+                "When investigated, I announce three addresses.  One address leads to an Innocent, one leads to a Meddler, and one leads to an Underling or Traitor.\n\nWhen I am lying or tainted, I announce three addresses, all addresses are either Innocent or Meddler roles."
+            ),
+        },
+        getInformation: getWeathermanInformation,
+        getDeceptiveInformation: getWeathermanDeceptiveInformation,
     },
 
     conman: {

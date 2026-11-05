@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import type { Board as BoardType, GameContext } from "@/src/types";
-import { generateBoard } from "@/src/generateBoard";
+import type {Board as BoardType, GameContext, RoleId} from "@/src/types";
+import {generateBoard, generateTestBoard} from "@/src/generateBoard";
 import { investigate } from "@/src/roles/investigate";
 import Board from "@/components/Board";
 import SuspectedRoles from "@/components/SuspectedRoles";
@@ -56,11 +56,10 @@ export default function Home() {
   const [gameStatus, setGameStatus] = useState<GameStatus>("playing");
   const [classificationCounts, setClassificationCounts] =
       useState<ClassificationCounts | null>(null);
+  const [suspectedRoleIds, setSuspectedRoleIds] = useState<RoleId[]>([]);
 
   useEffect(() => {
-    const newBoard = generateBoard();
-    setBoard(newBoard);
-    setClassificationCounts(getClassificationCounts(newBoard));
+    startNewGame()
   }, []);
 
   if (!board) {
@@ -81,8 +80,9 @@ export default function Home() {
   function startNewGame() {
     const newBoard = generateBoard();
 
-    setBoard(newBoard);
-    setClassificationCounts(getClassificationCounts(newBoard));
+    setBoard(newBoard.board);
+    setSuspectedRoleIds(newBoard.suspectedRoleIds);
+    setClassificationCounts(getClassificationCounts(newBoard.board));
     setSelectedAddress(null);
     setAnnouncements({});
     setGameStatus("playing");
@@ -94,24 +94,37 @@ export default function Home() {
     for (const character of currentBoard) {
       if (!character) continue;
 
-      if (Object.hasOwn(announcements, character.address)) {
-        continue;
-      }
+      const address = character.address;
 
-      const result = investigate(context, character.address);
+      // Preserve the original announcement if already investigated.
+      const regularAnnouncement = Object.hasOwn(announcements, address)
+          ? announcements[address]
+          : investigate(context, address) ?? "";
 
-      if (result !== null) {
-        newAnnouncements[character.address] = result;
+      // Add a line identifying the role this character pretended to be.
+      const pretendedLine =
+          character.apparentRole !== character.actualRole
+              ? `I pretended to be the ${roles[character.apparentRole].name}.\n`
+              : "";
+
+      // Avoid duplicating the line if Reveal All is pressed again.
+      const announcement = pretendedLine &&
+      !regularAnnouncement.startsWith(pretendedLine)
+          ? `${pretendedLine}\n${regularAnnouncement}`
+          : regularAnnouncement;
+
+      if (announcement) {
+        newAnnouncements[address] = announcement;
       }
     }
 
-    setAnnouncements((previous) => ({
+    setAnnouncements(previous => ({
       ...previous,
       ...newAnnouncements,
     }));
 
-    setBoard((previous) =>
-        previous?.map((character) =>
+    setBoard(previous =>
+        previous?.map(character =>
             character
                 ? { ...character, revealed: true }
                 : null
@@ -121,6 +134,12 @@ export default function Home() {
 
   function handleInvestigate(address: number) {
     if (gameStatus !== "playing") return;
+
+    // Preserve the original announcement if already investigated.
+    if (Object.hasOwn(announcements, address)) {
+      setSelectedAddress(address);
+      return;
+    }
 
     const result = investigate(context, address);
 
@@ -163,7 +182,7 @@ export default function Home() {
   return (
       <main className="container mx-auto max-w-6xl p-6">
         <h1 className="mb-6 text-3xl font-bold text-center">
-          Investigation
+          Dupery
         </h1>
 
         {gameStatus !== "playing" && (
@@ -196,7 +215,7 @@ export default function Home() {
             </div>
         )}
 
-        <div className="grid grid-cols-[260px_minmax(0,600px)_minmax(0,1fr)] items-start gap-6">
+        <div className="grid grid-cols-[260px_700px_minmax(0,260px)] items-start justify-center gap-6 -translate-x-27">
           <section className="w-full">
             <h2 className="mb-3 text-xl font-semibold text-center">
               Classifications
@@ -243,6 +262,35 @@ export default function Home() {
                   </div>
               )}
             </div>
+
+            <div className="mt-4 rounded-lg border p-5">
+              <h3 className="mb-3 text-lg font-semibold text-center">
+                Instructions
+              </h3>
+
+              <div className="space-y-3">
+                <div className="flex justify-between gap-3">
+                  <span>Goal:</span>
+                  <span className="font-semibold text-right">
+                  Arrest all evil
+                </span>
+                </div>
+
+                <div className="flex justify-between gap-3">
+                  <span>L-Click:</span>
+                  <span className="font-semibold text-right">
+                  Investigate
+                </span>
+                </div>
+
+                <div className="flex justify-between gap-3">
+                  <span>R-Click:</span>
+                  <span className="font-semibold text-right">
+                  Arrest
+                </span>
+                </div>
+              </div>
+            </div>
           </section>
 
           <section className="w-full">
@@ -258,7 +306,7 @@ export default function Home() {
           </section>
 
           <section className="min-w-0">
-            <SuspectedRoles />
+            <SuspectedRoles suspectedRoleIds={suspectedRoleIds} />
           </section>
         </div>
       </main>

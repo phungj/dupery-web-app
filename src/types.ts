@@ -4,6 +4,7 @@ export type RoleId =
     | "reporter"
     | "priest"
     | "mailman"
+    | "weatherman"
     | "copycat"
     | "drunkard"
     | "wannabe"
@@ -43,7 +44,9 @@ export type TermId =
     | "alive"
     | "dead"
     | "kill"
-    | "unarrested";
+    | "unarrested"
+    | "meddler"
+    | "traitor";
 
 export type RichText = Array<
     | { type: "text"; value: string }
@@ -136,4 +139,9 @@ export type ArrestResult =
 export type GameContext = {
     board: Board;
     roles: Record<RoleId, RoleDefinition>;
+};
+
+export type GeneratedGame = {
+    board: Board;
+    suspectedRoleIds: RoleId[];
 };

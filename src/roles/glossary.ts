@@ -6,7 +6,7 @@ export type GlossaryTerm = {
     aliases: string[];
     tooltip: string;
     style?: "default" | "evil" | "lying" | "tainted" | "traitor"
-        | "innocent" | "good";
+        | "innocent" | "good" | "meddler";
 };
 
 export const glossary: Record<TermId, GlossaryTerm> = {
@@ -160,5 +160,19 @@ export const glossary: Record<TermId, GlossaryTerm> = {
         name: "Unarrested",
         aliases: ["unarrested"],
         tooltip: "A role that has not been arrested yet."
-    }
+    },
+
+    "meddler": {
+        name: "Meddler",
+        aliases: ["meddler", "meddlers"],
+        tooltip: "Unhelpful good roles that tend to muddy the waters and make solving the case trickier.",
+        style: "meddler"
+    },
+
+    "traitor": {
+        name: "Traitor",
+        aliases: ["traitor", "traitors"],
+        tooltip: "The worst of the worst.  These evil roles will make it much harder to solve the case.",
+        style: "traitor"
+    },
 };
